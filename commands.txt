@@ -1,0 +1,5 @@
+# Compile server for linux
+GOOS=linux GOARCH=amd64 go build -o server
+
+# Send server executable to 'subhub' droplet
+scp ./server subhub:/home/subhub
