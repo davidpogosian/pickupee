@@ -1,5 +1,19 @@
+【 Useful Commands 】
+
 # Compile server for linux
 GOOS=linux GOARCH=amd64 go build -o server
 
 # Send server executable to 'subhub' droplet
 scp ./server subhub:/home/subhub
+
+# Run server here, instead of in Go cache
+go build -o pickupee && ./pickupee
+
+
+【 API Architecture 】
+
+Layer	        Responsibility
+
+Handler	        HTTP, validation, request/response
+Service	        Business logic, rules, transformations
+Repository/DAO	Raw DB access, SQL queries

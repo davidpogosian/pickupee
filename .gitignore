@@ -1,3 +1,5 @@
 
 # Mac thing
 .DS_store
+
+*.db
