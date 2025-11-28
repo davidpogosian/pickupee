@@ -2,11 +2,9 @@ package initialization
 
 import (
 	"database/sql"
-
-	"github.com/davidpogosian/pickupee/platform/logger"
 )
 
-func InitTables(db *sql.DB) {
+func InitTables(db *sql.DB) error {
 	ordersTable := `
     CREATE TABLE IF NOT EXISTS orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,10 +21,12 @@ func InitTables(db *sql.DB) {
     );`
 
 	if _, err := db.Exec(ordersTable); err != nil {
-		logger.Fatalf("Failed to create 'orders' table: %v", err)
+		return err
 	}
 
 	if _, err := db.Exec(orderItemsTable); err != nil {
-		logger.Fatalf("Failed to create 'order_items' table: %v", err)
+		return err
 	}
+
+	return nil
 }
