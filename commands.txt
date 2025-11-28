@@ -17,3 +17,5 @@ Layer	        Responsibility
 Handler	        HTTP, validation, request/response
 Service	        Business logic, rules, transformations
 Repository/DAO	Raw DB access, SQL queries
+
+※
