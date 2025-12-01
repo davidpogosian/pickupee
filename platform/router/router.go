@@ -3,15 +3,16 @@ package router
 import (
 	"net/http"
 
-	"github.com/davidpogosian/pickupee/web/api/createOrder"
-	"github.com/davidpogosian/pickupee/web/api/getOrder"
+	"github.com/davidpogosian/pickupee/service"
+	"github.com/davidpogosian/pickupee/web/api/listOrdersForUser"
+	"github.com/davidpogosian/pickupee/web/api/placeOrder"
 )
 
-func Create() *http.ServeMux {
+func Create(orderService *service.OrderService) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/createOrder", createOrder.Handler())
-	mux.HandleFunc("/getOrder", getOrder.Handler())
+	mux.HandleFunc("/placeOrder", placeOrder.Handler(orderService))
+	mux.HandleFunc("/listOrdersForUser", listOrdersForUser.Handler(orderService))
 
 	return mux
 }

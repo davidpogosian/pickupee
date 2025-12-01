@@ -9,6 +9,9 @@ scp ./server subhub:/home/subhub
 # Run server here, instead of in Go cache
 go build -o pickupee && ./pickupee
 
+# Test every package
+go test ./...
+
 
 【 API Architecture 】
 

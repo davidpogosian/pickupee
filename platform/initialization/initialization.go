@@ -12,15 +12,26 @@ func InitTables(db *sql.DB) error {
         placed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );`
 
+	itemsTable := `
+    CREATE TABLE IF NOT EXISTS items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL
+    );`
+
 	orderItemsTable := `
     CREATE TABLE IF NOT EXISTS order_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         order_id INTEGER NOT NULL,
         item_id INTEGER NOT NULL,
-        FOREIGN KEY(order_id) REFERENCES orders(id)
+        FOREIGN KEY(order_id) REFERENCES orders(id),
+        FOREIGN KEY(item_id) REFERENCES items(id)
     );`
 
 	if _, err := db.Exec(ordersTable); err != nil {
+		return err
+	}
+
+	if _, err := db.Exec(itemsTable); err != nil {
 		return err
 	}
 
