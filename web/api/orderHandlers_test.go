@@ -2,46 +2,43 @@ package api
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/davidpogosian/pickupee/platform/initialization"
-	"github.com/davidpogosian/pickupee/platform/repository"
-	"github.com/davidpogosian/pickupee/platform/router"
-	"github.com/davidpogosian/pickupee/service"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func setupTestServer(t *testing.T) http.Handler {
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		t.Fatalf("Failed to open DB: %v", err)
-	}
+// func setupTestServer(t *testing.T) http.Handler {
+// 	db, err := sql.Open("sqlite3", ":memory:")
+// 	if err != nil {
+// 		t.Fatalf("Failed to open DB: %v", err)
+// 	}
 
-	if err := initialization.InitTables(db); err != nil {
-		t.Fatalf("Failed to init tables: %v", err)
-	}
+// 	if err := initialization.InitTables(db); err != nil {
+// 		t.Fatalf("Failed to init tables: %v", err)
+// 	}
 
-	// Insert some items to use in orders
-	_, err = db.Exec("INSERT INTO items (name) VALUES (?), (?), (?)", "item1", "item2", "item3")
-	if err != nil {
-		t.Fatalf("Failed to insert items: %v", err)
-	}
+// 	// Insert some items to use in orders
+// 	_, err = db.Exec("INSERT INTO items (name) VALUES (?), (?), (?)", "item1", "item2", "item3")
+// 	if err != nil {
+// 		t.Fatalf("Failed to insert items: %v", err)
+// 	}
 
-	// Repositories & services
-	orderRepo := repository.NewOrderRepository(db)
-	orderService := service.NewOrderService(orderRepo)
+// 	// Repositories & services
+// 	orderRepo := repository.NewOrderRepository(db)
+// 	orderService := service.NewOrderService(orderRepo)
 
-	// Router
-	r := router.Create(orderService)
-	return r
-}
+// 	// Router
+// 	r := router.Create(orderService)
+// 	return r
+// }
 
 func TestPlaceAndListOrdersHTTP(t *testing.T) {
-	r := setupTestServer(t)
+	db, r := initialization.CreateServer(":memory:")
+	defer db.Close()
 
 	// ----------------------
 	// 1️⃣ Test PlaceOrder

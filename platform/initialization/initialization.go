@@ -2,9 +2,16 @@ package initialization
 
 import (
 	"database/sql"
+	"fmt"
+	"log"
+	"net/http"
+
+	"github.com/davidpogosian/pickupee/platform/repository"
+	"github.com/davidpogosian/pickupee/platform/router"
+	"github.com/davidpogosian/pickupee/service"
 )
 
-func InitTables(db *sql.DB) error {
+func initTables(db *sql.DB) error {
 	ordersTable := `
     CREATE TABLE IF NOT EXISTS orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,4 +47,29 @@ func InitTables(db *sql.DB) error {
 	}
 
 	return nil
+}
+
+// Note: database is returned purely for the purpose of closing it
+func CreateServer(dbLocation string) (*sql.DB, *http.ServeMux) {
+	// Open database
+	db, err := sql.Open("sqlite3", dbLocation)
+	if err != nil {
+		panic(err)
+	}
+	defer log.Println("Hello I am defer") // Ctrl+C does not allow main() to finish executing
+
+	// Initialize database
+	err = initTables(db)
+	if err != nil {
+		panic(fmt.Errorf("Failed to initialize database: %w", err))
+	}
+
+	// Instantiate Repositories
+	orderRepository := repository.NewOrderRepository(db)
+
+	// Instantiate Services
+	orderService := service.NewOrderService(orderRepository)
+
+	// Make r
+	return db, router.Create(orderService)
 }
