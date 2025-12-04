@@ -3,7 +3,6 @@ package initialization
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/davidpogosian/pickupee/platform/repository"
@@ -56,7 +55,6 @@ func CreateServer(dbLocation string) (*sql.DB, *http.ServeMux) {
 	if err != nil {
 		panic(err)
 	}
-	defer log.Println("Hello I am defer") // Ctrl+C does not allow main() to finish executing
 
 	// Initialize database
 	err = initTables(db)

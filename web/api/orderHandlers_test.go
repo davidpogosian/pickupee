@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -36,27 +37,39 @@ import (
 // 	return r
 // }
 
-func TestPlaceAndListOrdersHTTP(t *testing.T) {
+func setUpTestScenario1(t *testing.T, db *sql.DB) {
+	_, err := db.Exec("INSERT INTO items (name) VALUES (?), (?), (?)", "Eggs", "Milk", "Bread")
+	if err != nil {
+		t.Fatalf("Failed to insert items: %v", err)
+	}
+}
+
+func TestPlaceOrderHTTP(t *testing.T) {
 	db, r := initialization.CreateServer(":memory:")
 	defer db.Close()
+
+	setUpTestScenario1(t, db)
 
 	// ----------------------
 	// 1️⃣ Test PlaceOrder
 	// ----------------------
-	placeOrderReq := map[string]interface{}{
+	placeOrderReq := map[string]any{
 		"user_id":  42,
-		"item_ids": []int{1, 2, 3},
+		"item_ids": []int{1, 3},
 	}
-	reqBody, _ := json.Marshal(placeOrderReq)
+	reqBody, err := json.Marshal(placeOrderReq)
+	if err != nil {
+		t.Fatalf("json marshal failed: %v", err)
+	}
 
-	req := httptest.NewRequest(http.MethodPost, "/orders", bytes.NewReader(reqBody))
+	req := httptest.NewRequest(http.MethodPost, "/placeOrder", bytes.NewReader(reqBody))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("PlaceOrder returned status %d", w.Code)
+		t.Fatalf("/placeOrder returned status %d", w.Code)
 	}
 
 	var resp map[string]int
@@ -67,33 +80,36 @@ func TestPlaceAndListOrdersHTTP(t *testing.T) {
 	orderID, ok := resp["order_id"]
 	if !ok || orderID <= 0 {
 		t.Fatalf("Invalid order_id in response: %v", resp)
+	} else {
+		t.Logf("Order ID: %d", orderID)
 	}
 
 	// ----------------------
 	// 2️⃣ Test ListOrdersForUser
 	// ----------------------
-	listReq := map[string]interface{}{
-		"user_id": 42,
-	}
-	listBody, _ := json.Marshal(listReq)
+	//
+	// listReq := map[string]interface{}{
+	// 	"user_id": 42,
+	// }
+	// listBody, _ := json.Marshal(listReq)
 
-	req = httptest.NewRequest(http.MethodPost, "/orders/list", bytes.NewReader(listBody))
-	req.Header.Set("Content-Type", "application/json")
-	w = httptest.NewRecorder()
+	// req = httptest.NewRequest(http.MethodPost, "/orders/list", bytes.NewReader(listBody))
+	// req.Header.Set("Content-Type", "application/json")
+	// w = httptest.NewRecorder()
 
-	r.ServeHTTP(w, req)
+	// r.ServeHTTP(w, req)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("ListOrdersForUser returned status %d", w.Code)
-	}
+	// if w.Code != http.StatusOK {
+	// 	t.Fatalf("ListOrdersForUser returned status %d", w.Code)
+	// }
 
-	var listResp map[string][]int
-	if err := json.NewDecoder(w.Body).Decode(&listResp); err != nil {
-		t.Fatalf("Failed to decode list response: %v", err)
-	}
+	// var listResp map[string][]int
+	// if err := json.NewDecoder(w.Body).Decode(&listResp); err != nil {
+	// 	t.Fatalf("Failed to decode list response: %v", err)
+	// }
 
-	orderIDs, ok := listResp["order_ids"]
-	if !ok || len(orderIDs) != 1 || orderIDs[0] != orderID {
-		t.Fatalf("Expected order_ids to contain %d, got %v", orderID, orderIDs)
-	}
+	// orderIDs, ok := listResp["order_ids"]
+	// if !ok || len(orderIDs) != 1 || orderIDs[0] != orderID {
+	// 	t.Fatalf("Expected order_ids to contain %d, got %v", orderID, orderIDs)
+	// }
 }

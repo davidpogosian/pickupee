@@ -12,7 +12,7 @@ func Create(orderService *service.OrderService) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/placeOrder", placeOrder.Handler(orderService))
-	mux.HandleFunc("/listOrdersForUser", listOrdersForUser.Handler(orderService))
+	mux.HandleFunc("/listOrdersForUser", listOrdersForUser.Handler(orderService)) // /orders?user_id=42
 
 	return mux
 }
