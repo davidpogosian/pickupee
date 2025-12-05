@@ -3,23 +3,17 @@ package listOrdersForUser
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/davidpogosian/pickupee/service"
 )
-
-type requestStruct struct {
-	UserID int `json:"user_id"`
-}
 
 type responseStruct struct {
 	OrderIDs []int `json:"order_ids"`
 }
 
-// JSON input:
-//
-//	{
-//		"user_id": 42
-//	}
+// Request:
+// /orders?user_id=42
 //
 // JSON output:
 //
@@ -28,30 +22,40 @@ type responseStruct struct {
 //	}
 func Handler(orderService *service.OrderService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Only allow POST
-		if r.Method != http.MethodPost {
+		// Only allow GET
+		if r.Method != http.MethodGet {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 
-		var req requestStruct
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
+		// Extract user_id from URL query string
+		userIDStr := r.URL.Query().Get("user_id")
+		if userIDStr == "" {
+			http.Error(w, "Missing user_id", http.StatusBadRequest)
 			return
 		}
 
-		orders, err := orderService.ListOrdersForUser(req.UserID)
+		userID, err := strconv.Atoi(userIDStr)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, "Invalid user_id", http.StatusBadRequest)
 			return
 		}
 
-		var orderIDs []int
-		for _, order := range orders {
-			orderIDs = append(orderIDs, order.ID)
+		// Call service layer
+		orders, err := orderService.ListOrdersForUser(userID)
+		if err != nil {
+			http.Error(w, "Failed to list orders: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		orderIDs := make([]int, len(orders))
+		for i, order := range orders {
+			orderIDs[i] = order.ID
 		}
 
 		resp := responseStruct{OrderIDs: orderIDs}
+
+		// Output JSON
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(resp)
 	}

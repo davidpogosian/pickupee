@@ -12,35 +12,27 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// func setupTestServer(t *testing.T) http.Handler {
-// 	db, err := sql.Open("sqlite3", ":memory:")
-// 	if err != nil {
-// 		t.Fatalf("Failed to open DB: %v", err)
-// 	}
-
-// 	if err := initialization.InitTables(db); err != nil {
-// 		t.Fatalf("Failed to init tables: %v", err)
-// 	}
-
-// 	// Insert some items to use in orders
-// 	_, err = db.Exec("INSERT INTO items (name) VALUES (?), (?), (?)", "item1", "item2", "item3")
-// 	if err != nil {
-// 		t.Fatalf("Failed to insert items: %v", err)
-// 	}
-
-// 	// Repositories & services
-// 	orderRepo := repository.NewOrderRepository(db)
-// 	orderService := service.NewOrderService(orderRepo)
-
-// 	// Router
-// 	r := router.Create(orderService)
-// 	return r
-// }
-
-func setUpTestScenario1(t *testing.T, db *sql.DB) {
+func setupTestScenario1(t *testing.T, db *sql.DB) {
 	_, err := db.Exec("INSERT INTO items (name) VALUES (?), (?), (?)", "Eggs", "Milk", "Bread")
 	if err != nil {
 		t.Fatalf("Failed to insert items: %v", err)
+	}
+}
+
+func setupTestScenario2(t *testing.T, db *sql.DB) {
+	_, err := db.Exec("INSERT INTO items (name) VALUES (?), (?), (?)", "Eggs", "Milk", "Bread")
+	if err != nil {
+		t.Fatalf("Failed to insert Items: %v", err)
+	}
+
+	_, err = db.Exec("INSERT INTO orders (user_id) VALUES (?)", 42)
+	if err != nil {
+		t.Fatalf("Failed to insert Order: %v", err)
+	}
+
+	_, err = db.Exec("INSERT INTO order_items (order_id, item_id) VALUES (?, ?), (?, ?)", 1, 1, 1, 3)
+	if err != nil {
+		t.Fatalf("Failed to insert OrderItems: %v", err)
 	}
 }
 
@@ -48,11 +40,8 @@ func TestPlaceOrderHTTP(t *testing.T) {
 	db, r := initialization.CreateServer(":memory:")
 	defer db.Close()
 
-	setUpTestScenario1(t, db)
+	setupTestScenario1(t, db)
 
-	// ----------------------
-	// 1️⃣ Test PlaceOrder
-	// ----------------------
 	placeOrderReq := map[string]any{
 		"user_id":  42,
 		"item_ids": []int{1, 3},
@@ -77,39 +66,46 @@ func TestPlaceOrderHTTP(t *testing.T) {
 		t.Fatalf("Failed to decode response: %v", err)
 	}
 
+	// Check order ID
 	orderID, ok := resp["order_id"]
 	if !ok || orderID <= 0 {
 		t.Fatalf("Invalid order_id in response: %v", resp)
 	} else {
 		t.Logf("Order ID: %d", orderID)
 	}
+}
 
-	// ----------------------
-	// 2️⃣ Test ListOrdersForUser
-	// ----------------------
-	//
-	// listReq := map[string]interface{}{
-	// 	"user_id": 42,
-	// }
-	// listBody, _ := json.Marshal(listReq)
+func TestListOrdersForUser(t *testing.T) {
+	db, r := initialization.CreateServer(":memory:")
+	defer db.Close()
 
-	// req = httptest.NewRequest(http.MethodPost, "/orders/list", bytes.NewReader(listBody))
-	// req.Header.Set("Content-Type", "application/json")
-	// w = httptest.NewRecorder()
+	setupTestScenario2(t, db)
 
-	// r.ServeHTTP(w, req)
+	req := httptest.NewRequest(http.MethodGet, "/orders?user_id=42", nil)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
 
-	// if w.Code != http.StatusOK {
-	// 	t.Fatalf("ListOrdersForUser returned status %d", w.Code)
-	// }
+	r.ServeHTTP(w, req)
 
-	// var listResp map[string][]int
-	// if err := json.NewDecoder(w.Body).Decode(&listResp); err != nil {
-	// 	t.Fatalf("Failed to decode list response: %v", err)
-	// }
+	if w.Code != http.StatusOK {
+		t.Fatalf("/placeOrder returned status %d", w.Code)
+	}
 
-	// orderIDs, ok := listResp["order_ids"]
-	// if !ok || len(orderIDs) != 1 || orderIDs[0] != orderID {
-	// 	t.Fatalf("Expected order_ids to contain %d, got %v", orderID, orderIDs)
-	// }
+	var resp map[string][]int
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	// Check order IDs
+	orderIDs, ok := resp["order_ids"]
+	if !ok {
+		t.Fatalf("Invalid order_id in response: %v", resp)
+	} else if len(orderIDs) != 1 {
+		t.Fatalf("Expected one order_id, got none")
+	} else {
+		t.Log("Order IDs:")
+		for _, orderID := range orderIDs {
+			t.Logf("Order ID: %d \n", orderID)
+		}
+	}
 }

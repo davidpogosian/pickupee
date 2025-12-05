@@ -11,8 +11,9 @@ import (
 func Create(orderService *service.OrderService) *http.ServeMux {
 	mux := http.NewServeMux()
 
+	// TODO: Make a separate /orders mux
 	mux.HandleFunc("/placeOrder", placeOrder.Handler(orderService))
-	mux.HandleFunc("/listOrdersForUser", listOrdersForUser.Handler(orderService)) // /orders?user_id=42
+	mux.HandleFunc("/orders", listOrdersForUser.Handler(orderService)) // /orders?user_id=42
 
 	return mux
 }
