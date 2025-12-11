@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/davidpogosian/pickupee/platform/initialization"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 func setupTestScenario1(t *testing.T, db *sql.DB) {

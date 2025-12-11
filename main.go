@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/davidpogosian/pickupee/platform/initialization"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {

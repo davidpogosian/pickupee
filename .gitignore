@@ -3,3 +3,8 @@
 .DS_store
 
 *.db
+
+pickupee
+
+commands.txt
+build.sh

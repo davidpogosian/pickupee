@@ -1,3 +1,5 @@
+※
+
 【 Useful Commands 】
 
 # Compile server for linux
@@ -6,12 +8,20 @@ GOOS=linux GOARCH=amd64 go build -o server
 # Send server executable to 'subhub' droplet
 scp ./server subhub:/home/subhub
 
+# Tap into server
+ssh subhub
+
 # Run server here, instead of in Go cache
 go build -o pickupee && ./pickupee
 
 # Test every package
-go test ./...
+go test ./... -v
 
+# See who is using port
+sudo lsof -i :8080
+
+# Stop service with auto-restart from restarting
+sudo systemctl disable --now pickupee.service
 
 【 API Architecture 】
 
@@ -21,4 +31,22 @@ Handler	        HTTP, validation, request/response
 Service	        Business logic, rules, transformations
 Repository/DAO	Raw DB access, SQL queries
 
-※
+【 Service file example 】
+
+# Service files belong in /etc/systemd/system/
+# See live log of service: journalctl -u pickupee.service -f
+
+[Unit]
+Description=SubHub Go Server
+After=network.target
+
+[Service]
+ExecStart=/home/subhub/server
+Restart=always
+RestartSec=5
+User=subhub
+WorkingDirectory=/home/subhub
+Environment="PORT=8080"  # Add any custom env vars here
+
+[Install]
+WantedBy=multi-user.target

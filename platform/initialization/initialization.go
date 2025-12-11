@@ -8,6 +8,8 @@ import (
 	"github.com/davidpogosian/pickupee/platform/repository"
 	"github.com/davidpogosian/pickupee/platform/router"
 	"github.com/davidpogosian/pickupee/service"
+
+	_ "modernc.org/sqlite"
 )
 
 func initTables(db *sql.DB) error {
@@ -51,7 +53,7 @@ func initTables(db *sql.DB) error {
 // Note: database is returned purely for the purpose of closing it
 func CreateServer(dbLocation string) (*sql.DB, *http.ServeMux) {
 	// Open database
-	db, err := sql.Open("sqlite3", dbLocation)
+	db, err := sql.Open("sqlite", dbLocation)
 	if err != nil {
 		panic(err)
 	}
