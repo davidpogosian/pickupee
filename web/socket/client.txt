@@ -1,0 +1,90 @@
+package main
+
+import (
+	"log"
+	"net/url"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/gorilla/websocket"
+	"github.com/stianeikeland/go-rpio/v4"
+)
+
+const (
+	serverURL = "wss://api.blueborealis.com/socket"
+	gpioPin   = 17 // BCM pin number (GPIO17)
+)
+
+func main() {
+	token := os.Getenv("LOCKER_TOKEN")
+	if token == "" {
+		log.Fatal("LOCKER_TOKEN env variable must be set")
+	}
+
+	// Init GPIO
+	if err := rpio.Open(); err != nil {
+		log.Fatal("Failed to open GPIO:", err)
+	}
+	defer rpio.Close()
+
+	pin := rpio.Pin(gpioPin)
+	pin.Output()
+	pin.Low() // default OFF
+
+	// Build WebSocket URL
+	u := url.URL{
+		Scheme: "wss",
+		Host:   "api.blueborealis.com",
+		Path:   "/socket",
+	}
+	q := u.Query()
+	q.Set("token", token)
+	u.RawQuery = q.Encode()
+
+	log.Println("Connecting to", u.String())
+
+	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	if err != nil {
+		log.Fatal("WebSocket dial error:", err)
+	}
+	defer conn.Close()
+
+	log.Println("Connected to server")
+
+	// Graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		for {
+			_, msg, err := conn.ReadMessage()
+			if err != nil {
+				log.Println("WebSocket read error:", err)
+				return
+			}
+
+			command := string(msg)
+			log.Println("Received command:", command)
+
+			switch command {
+			case "ON":
+				pin.High()
+				log.Println("GPIO ON")
+			case "OFF":
+				pin.Low()
+				log.Println("GPIO OFF")
+			default:
+				log.Println("Unknown command:", command)
+			}
+		}
+	}()
+
+	// Keep alive + exit handling
+	select {
+	case <-sigChan:
+		log.Println("Shutting down")
+	case <-time.After(24 * time.Hour):
+	}
+}

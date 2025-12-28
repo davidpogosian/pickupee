@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -41,6 +42,25 @@ func Handler() http.HandlerFunc {
 		defer conn.Close()
 
 		log.Println("Pi connected!")
+
+		go func() {
+			// Example demo commands
+			err := conn.WriteMessage(websocket.TextMessage, []byte("ON"))
+			if err != nil {
+				log.Println("write error:", err)
+				return
+			}
+			log.Println("Sent: ON")
+
+			time.Sleep(5 * time.Second)
+
+			err = conn.WriteMessage(websocket.TextMessage, []byte("OFF"))
+			if err != nil {
+				log.Println("write error:", err)
+				return
+			}
+			log.Println("Sent: OFF")
+		}()
 
 		// Echo loop or command loop
 		for {
